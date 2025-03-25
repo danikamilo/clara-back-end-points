@@ -1,0 +1,10 @@
+com/clara/back/endpoints/rest/service/model/discographies/Result.class
+com/clara/back/endpoints/rest/service/model/discographies/Urls.class
+com/clara/back/endpoints/rest/service/model/bd/Artist.class
+com/clara/back/endpoints/rest/service/controller/ArtistsController.class
+com/clara/back/endpoints/rest/service/repository/ArtistRepositories.class
+com/clara/back/endpoints/rest/service/model/discographies/DiscogsResponse.class
+com/clara/back/endpoints/rest/service/model/discographies/Pagination.class
+com/clara/back/endpoints/rest/service/service/IArtistsService.class
+com/clara/back/endpoints/rest/service/configuration/AppConfig.class
+com/clara/back/endpoints/rest/service/model/discographies/Community.class
