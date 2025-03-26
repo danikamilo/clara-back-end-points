@@ -1,12 +1,11 @@
 package com.clara.back.endpoints.rest.service.model.bd;
 
 
-import com.clara.back.endpoints.rest.service.model.discographies.Community;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @Autor Daneil Camilo
@@ -16,21 +15,32 @@ import java.util.ArrayList;
 @Table(name = "artist")
 public class Artist {
 
-    private String style;
-    private String thumb;
-    private String title;
-    private String country;
-    private String format;
-    private String uri;
-    //private Community community;
-    private String label;
-    private String catno;
-    private String releaseYear;
-    private String genre;
-    private String resourceUrl;
-    private String type;
     @Id
     @Column(name = "id")
     private Long id;
 
+    @ManyToOne
+    @JoinColumn(name = "idIndex", nullable = false)
+    private ArtistIndex artistIndex;
+    @Column(name = "style", length = 1000)
+    private List<String> style;
+    private String thumb;
+    private String title;
+    private String country;
+    @Column(name = "format", length = 1000)
+    private List<String> format;
+    private String uri;
+    @Column(name = "label", length = 1000)
+    private List<String> label;
+    @Column(name = "barcode", length = 1000)
+    private List<String> barcode;
+    private String catno;
+    private Long releaseYear;
+    @Column(name = "genre", length = 1000)
+    private List<String> genre;
+    private String resourceUrl;
+    private String type;
+
+    //public List<Format> formats;
+    //private Community community;
 }

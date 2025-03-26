@@ -1,8 +1,8 @@
 package com.clara.back.endpoints.rest.service.controller;
 
 
+import com.clara.back.endpoints.rest.service.dto.AdvancedArtistComparisonDTO;
 import com.clara.back.endpoints.rest.service.model.bd.Artist;
-import com.clara.back.endpoints.rest.service.model.discographies.DiscogsResponse;
 import com.clara.back.endpoints.rest.service.service.IArtistsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -28,4 +28,21 @@ public class ArtistsController {
     public List<Artist> getDiscoGraphies() {
         return artistServ.getDiscoGraphies();
     }
+
+    @GetMapping("compare-artist/first/{first}/second/{second}/third/{third}/")
+    public List<AdvancedArtistComparisonDTO> compareArtist(@PathVariable String first, @PathVariable String second, @PathVariable String third) {
+        return artistServ.compareArtist(first, second, third);
+    }
+
+    @GetMapping("compare-artist/first/{first}/second/{second}/")
+    public List<AdvancedArtistComparisonDTO> compareArtist(@PathVariable String first, @PathVariable String second) {
+        return artistServ.compareArtist(first, second);
+    }
+
+    @GetMapping("/compare-artist")
+    public List<AdvancedArtistComparisonDTO> buy(@RequestParam("artists") String input){
+        return artistServ.compareArtist(input);
+    }
+
+
 }
