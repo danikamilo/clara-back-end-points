@@ -3,8 +3,6 @@ package com.clara.back.endpoints.rest.service.model.bd;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
-import java.util.ArrayList;
 import java.util.List;
 
 /**

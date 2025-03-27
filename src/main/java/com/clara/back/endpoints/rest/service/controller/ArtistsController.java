@@ -19,7 +19,7 @@ public class ArtistsController {
     @Autowired
     private IArtistsService artistServ;
 
-    @GetMapping("search-artist/{artistName}")
+    @GetMapping("search-artist/{artistName}/")
     public List<Artist> searchArtist(@PathVariable String artistName) {
         return artistServ.searchArtist(artistName);
     }

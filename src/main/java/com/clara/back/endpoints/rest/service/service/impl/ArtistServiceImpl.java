@@ -2,8 +2,8 @@ package com.clara.back.endpoints.rest.service.service.impl;
 
 import com.clara.back.endpoints.rest.service.dto.AdvancedArtistComparisonDTO;
 import com.clara.back.endpoints.rest.service.exceptions.DatabaseOperationException;
-import com.clara.back.endpoints.rest.service.exceptions.ExternalServiceException;
-import com.clara.back.endpoints.rest.service.exceptions.DiscogsException;
+import com.clara.back.endpoints.rest.service.exceptions.InternalServiceException;
+import com.clara.back.endpoints.rest.service.exceptions.NoArgumentsException;
 import com.clara.back.endpoints.rest.service.model.bd.Artist;
 import com.clara.back.endpoints.rest.service.model.bd.ArtistIndex;
 import com.clara.back.endpoints.rest.service.model.wsdiscogs.DiscogsResponse;
@@ -11,18 +11,25 @@ import com.clara.back.endpoints.rest.service.model.wsdiscogs.Result;
 import com.clara.back.endpoints.rest.service.repository.ArtistIndexRepository;
 import com.clara.back.endpoints.rest.service.repository.ArtistRepositories;
 import com.clara.back.endpoints.rest.service.service.IArtistsService;
+import com.clara.back.endpoints.rest.service.util.Constants;
+import com.clara.back.endpoints.rest.service.util.Validators;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import java.util.*;
-import java.util.stream.Collectors;
 
+/**
+ * @Autor Daniel Camilo
+ */
 @Service
 public class ArtistServiceImpl implements IArtistsService {
+
+    @Value("${com.clara.back.endpoints.rest.key}")
+    private String apiKey;
+
+    @Value("${com.clara.back.endpoints.rest.secret}")
+    private String apiSecret;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -34,129 +41,142 @@ public class ArtistServiceImpl implements IArtistsService {
     private ArtistIndexRepository artistIndexRepo;
 
     @Value("${com.clara.back.endpoints.rest.service.get.discogs.artist}")
-    private String discogsApiURL;;
-
-    @Value("${com.clara.back.endpoints.rest.key}")
-    private String apiKey;
-
-    @Value("${com.clara.back.endpoints.rest.secret}")
-    private String apiSecret;
-
+    private String discogsApiURL;
 
     @Override
-    public List<Artist> searchArtist(String artistName) throws DatabaseOperationException, ExternalServiceException {
+    public List<Artist> searchArtist(String artistName) throws InternalServiceException {
         try{
+            Validators.validateInputsearchArtist(artistName);
             String url = discogsApiURL.replace("{query}", artistName).replace("{key}", apiKey).replace("{secret}", apiSecret);
-            return saveDiscographies(restTemplate.getForObject(url, DiscogsResponse.class), artistName);
-        } catch (ExternalServiceException e) {
-            throw new ExternalServiceException("Error al comunicarse con el servicio externo", e);
+            DiscogsResponse discogsResponse = restTemplate.getForObject(url, DiscogsResponse.class);
+            if(discogsResponse != null) {
+                return saveDiscographies(discogsResponse, artistName);
+            }
+        } catch (InternalServiceException e) {
+            throw new InternalServiceException(Constants.INTERNAL_SERVER_ERROR, e);
         }
-
+        return new ArrayList<>();
     }
 
     @Override
-    public List<Artist> getDiscoGraphies() throws DatabaseOperationException{
-        List<Artist> listArtsit = artistRepositories.findAll();
-        listArtsit.stream().filter(artist -> artist.getReleaseYear() == null).forEach(artist -> artist.setReleaseYear(0L));
-        return listArtsit.stream().sorted(Comparator.comparing(Artist::getReleaseYear, Comparator.nullsLast(Comparator.reverseOrder()))).collect(Collectors.toList());
+    public List<Artist> getDiscoGraphies() throws InternalServiceException{
+        try{
+            List<Artist> listArtsit = artistRepositories.findAll();
+            listArtsit.stream().filter(artist -> artist.getReleaseYear() == null).forEach(artist -> artist.setReleaseYear(0L));
+            listArtsit.stream().sorted(Comparator.comparing(Artist::getReleaseYear, Comparator.nullsLast(Comparator.reverseOrder()))).forEach(artist -> artist.setArtistIndex(null));
+            return listArtsit;
+        } catch (InternalServiceException e) {
+            throw new InternalServiceException(Constants.INTERNAL_SERVER_ERROR, e);
+        }
     }
 
     @Override
-    public List<AdvancedArtistComparisonDTO> compareArtist(String first, String second, String third) throws DiscogsException , IllegalArgumentException{
-        if(first.isBlank() || second.isBlank()){
-            throw new DiscogsException("Los nombres de los artistas no pueden estar vacíos.");
-        }
+    public List<AdvancedArtistComparisonDTO> compareArtist(String first, String second, String third) throws NoArgumentsException, InternalServiceException {
+        Validators.validateInputCompareArtists(first, second);
         try {
-            ArtistIndex firstArtistIndex = artistIndexRepo.findByNameCustom(first);
-            ArtistIndex secondArtistIndex = artistIndexRepo.findByNameCustom(second);
-            ArtistIndex thirdArtistIndex = artistIndexRepo.findByNameCustom(third);
-            List<Artist> listFirstArtist = artistRepositories.findArtistsByArtistIndexId(firstArtistIndex.getId());
-            List<Artist> listSecondArtist = artistRepositories.findArtistsByArtistIndexId(firstArtistIndex.getId());
-            List<Artist> listThirdArtist = artistRepositories.findArtistsByArtistIndexId(firstArtistIndex.getId());
+            Optional<ArtistIndex> firstArtistIndex = artistIndexRepo.findByNameCustom(first);
+            Optional<ArtistIndex> secondArtistIndex = artistIndexRepo.findByNameCustom(second);
+            Optional<ArtistIndex> thirdArtistIndex = artistIndexRepo.findByNameCustom(third);
+            List<Artist> listFirstArtist = artistRepositories.findArtistsByArtistIndexId(firstArtistIndex.get().getId());
+            List<Artist> listSecondArtist = artistRepositories.findArtistsByArtistIndexId(secondArtistIndex.get().getId());
+            List<Artist> listThirdArtist = artistRepositories.findArtistsByArtistIndexId(thirdArtistIndex.get().getId());
             List<AdvancedArtistComparisonDTO> report = new ArrayList<>();
             report.add(getAdvancedArtistComparison(listFirstArtist, first));
             report.add(getAdvancedArtistComparison(listSecondArtist, second));
             report.add(getAdvancedArtistComparison(listThirdArtist, third));
             return report;
-        }catch (IllegalArgumentException ix){
-            throw new DiscogsException("Ha ocurrio realizando la comparacion de los artistas 1", ix);
-        }catch (DiscogsException e){
-            throw new DiscogsException("Ha ocurrio realizando la comparacion de los artistas", e);
+        }catch (InternalServiceException e){
+            throw new InternalServiceException(Constants.ERROR_PROCESSING_COMPARE_ARTIST, e);
         }
     }
 
     @Override
-    public List<AdvancedArtistComparisonDTO> compareArtist(String first, String second) throws NoSuchElementException{
-        if(first.isBlank() || second.isBlank()){
-            throw new IllegalArgumentException("Los nombres de los no pueden estar vacíos.");
+    public List<AdvancedArtistComparisonDTO> compareArtist(String first, String second) throws NoArgumentsException, InternalServiceException {
+        Validators.validateInputCompareArtists(first, second);
+        try{
+            Optional<ArtistIndex> firstArtistIndex = artistIndexRepo.findByNameCustom(first);
+            Optional<ArtistIndex> secondArtistIndex = artistIndexRepo.findByNameCustom(second);
+            List<Artist> listFirstArtist = artistRepositories.findArtistsByArtistIndexId(firstArtistIndex.get().getId());
+            List<Artist> listSecondArtist = artistRepositories.findArtistsByArtistIndexId(secondArtistIndex.get().getId());
+            List<AdvancedArtistComparisonDTO> report = new ArrayList<>();
+            report.add(getAdvancedArtistComparison(listFirstArtist, first));
+            report.add(getAdvancedArtistComparison(listSecondArtist, second));
+            return report;
+        }catch (InternalServiceException e){
+            throw new InternalServiceException(Constants.ERROR_PROCESSING_COMPARE_ARTIST, e);
         }
-        ArtistIndex firstArtistIndex = artistIndexRepo.findByNameCustom(first);
-        ArtistIndex secondArtistIndex = artistIndexRepo.findByNameCustom(second);
-        List<Artist> listFirstArtist = artistRepositories.findArtistsByArtistIndexId(firstArtistIndex.getId());
-        List<Artist> listSecondArtist = artistRepositories.findArtistsByArtistIndexId(firstArtistIndex.getId());
-        List<AdvancedArtistComparisonDTO> report = new ArrayList<>();
-        report.add(getAdvancedArtistComparison(listFirstArtist, first));
-        report.add(getAdvancedArtistComparison(listSecondArtist, second));
-        return report;
     }
 
     @Override
-    public List<AdvancedArtistComparisonDTO> compareArtist(String input) throws IllegalArgumentException {
-        if(input.isBlank())
-            throw new IllegalArgumentException("Los parametros no pueden estar vacíos.");
-
-        List<String> artistNames = List.of(input.split(","));
+    public List<AdvancedArtistComparisonDTO> compareArtist(String artists) throws NoArgumentsException, InternalServiceException {
+        Validators.validateInputCompareArtist(artists);
+        List<String> artistNames = List.of(artists.split(","));
         return artistNames.stream().map(this::getAdvancedArtistComparison)
-                .flatMap(List::stream).collect(Collectors.toList());}
+                .flatMap(List::stream).toList();
+    }
 
-    private List<AdvancedArtistComparisonDTO> getAdvancedArtistComparison(String artist){
-        List<AdvancedArtistComparisonDTO> report = new ArrayList<>();
-        ArtistIndex artistIndex = artistIndexRepo.findByNameCustom(artist);
-        List<Artist> listArtist = artistRepositories.findArtistsByArtistIndexId(artistIndex.getId());
-        report.add(getAdvancedArtistComparison(listArtist, artist));
-        return report;
+    private List<AdvancedArtistComparisonDTO> getAdvancedArtistComparison(String artist) throws NoArgumentsException, InternalServiceException {
+        try{
+            List<AdvancedArtistComparisonDTO> report = new ArrayList<>();
+            Optional<ArtistIndex> artistIndex = artistIndexRepo.findByNameCustom(artist);
+            List<Artist> listArtist = artistRepositories.findArtistsByArtistIndexId(artistIndex.get().getId());
+            report.add(getAdvancedArtistComparison(listArtist, artist));
+            return report;
+        }catch (InternalServiceException e){
+            throw new InternalServiceException(Constants.ERROR_PROCESSING_COMPARE_ARTIST, e);
+        }
     }
 
     private List<Artist> saveDiscographies(DiscogsResponse discogsResponse, String artistName) throws DatabaseOperationException{
         try {
-            ArtistIndex artistIndex = artistIndexRepo.save(new ArtistIndex(artistName));
-            List<Artist> listArtist = convertResultListToArtistList(discogsResponse.getResults());
-            listArtist.forEach(artist -> artist.setArtistIndex(artistIndex));
-            return artistRepositories.saveAll(listArtist);
-        } catch (DataIntegrityViolationException e) {
-            throw new DatabaseOperationException("Violación de integridad de datos al guardar discografías", e);
-        } catch (JpaSystemException e) {
-            throw new DatabaseOperationException("Error del sistema JPA al guardar discografías", e);
+            Optional<ArtistIndex> findDBArtistIndex = artistIndexRepo.findByNameCustom(artistName);
+            if(findDBArtistIndex.isEmpty()) {
+                ArtistIndex artistIndex = artistIndexRepo.save(new ArtistIndex(artistName));
+                List<Artist> listArtist = convertResultListToArtistList(discogsResponse.getResults());
+                listArtist.forEach(artist -> artist.setArtistIndex(artistIndex));
+                return artistRepositories.saveAll(listArtist);
+            }else{
+                return convertResultListToArtistList(discogsResponse.getResults());
+            }
+        } catch (InternalServiceException e) {
+            throw new InternalServiceException(Constants.INTERNAL_SERVER_ERROR, e);
         }
     }
 
-    private AdvancedArtistComparisonDTO getAdvancedArtistComparison(List<Artist> listArtist, String artistName) throws NoSuchElementException {
+    private AdvancedArtistComparisonDTO getAdvancedArtistComparison(List<Artist> listArtist, String artistName) throws NoArgumentsException, InternalServiceException {
         AdvancedArtistComparisonDTO advancedArtistComparison = new AdvancedArtistComparisonDTO();
         List<Artist> filteredList = listArtist.stream().filter(artist -> artist.getReleaseYear() != null).toList();
-        if (filteredList.isEmpty())
-            throw new NoSuchElementException("No hay información con año de lanzamiento disponible.");
+        Validators.validateListAdvancedArtistComparison(filteredList);
+        try{
+            Optional<Artist> oldestYearRelease = filteredList.stream().min(Comparator.comparing(Artist::getReleaseYear));
+            if(oldestYearRelease.isPresent()) {
+                advancedArtistComparison.setOldestYearRelease(oldestYearRelease.get().getReleaseYear());
+            }
+            Optional<Artist> lastYearRelease = filteredList.stream().max(Comparator.comparing(Artist::getReleaseYear));
+            if(lastYearRelease.isPresent()) {
+                advancedArtistComparison.setLastYearRelease(lastYearRelease.get().getReleaseYear());
+                advancedArtistComparison.setReleaseNumber(listArtist.size());
+                advancedArtistComparison.setYearsOfActivity(lastYearRelease.get().getReleaseYear() - oldestYearRelease.get().getReleaseYear());
+            }
+            advancedArtistComparison.setArtistName(artistName);
+            List<Artist> filteredListGenres = listArtist.stream().filter(artist -> artist.getGenre() != null).toList();
+            List<String> distintGenres = filteredListGenres.stream().map(Artist::getGenre).flatMap(List::stream).distinct().toList();
+            advancedArtistComparison.setGenres(distintGenres);
+            advancedArtistComparison.setGenreNumbers(distintGenres.size());
 
-        Optional<Artist> oldestYearRelease = filteredList.stream().min(Comparator.comparing(Artist::getReleaseYear));
-        advancedArtistComparison.setOldestYearRelease(oldestYearRelease.get().getReleaseYear());
-        Optional<Artist> lastYearRelease = filteredList.stream().max(Comparator.comparing(Artist::getReleaseYear));
-        advancedArtistComparison.setLastYearRelease(lastYearRelease.get().getReleaseYear());
-        advancedArtistComparison.setReleaseNumber(listArtist.size());
-        advancedArtistComparison.setYearsOfActivity(lastYearRelease.get().getReleaseYear() - oldestYearRelease.get().getReleaseYear());
-        advancedArtistComparison.setArtistName(artistName);
-        List<Artist> filteredListGenres = listArtist.stream().filter(artist -> artist.getGenre() != null).toList();
-        List<String> distintGenres = filteredListGenres.stream().map(Artist::getGenre).flatMap(List::stream).distinct().toList();
-        advancedArtistComparison.setGenres(distintGenres);
-        advancedArtistComparison.setGenreNumbers(distintGenres.size());
+            List<Artist> filteredListStyles = listArtist.stream().filter(artist -> artist.getStyle() != null).toList();
+            filteredListStyles.stream().map(Artist::getStyle).flatMap(List::stream).distinct();
+            advancedArtistComparison.setStyles(distintGenres);
+            advancedArtistComparison.setStyleNumbers(distintGenres.size());
+            return advancedArtistComparison;
+        } catch (InternalServiceException e) {
+            throw new InternalServiceException(Constants.INTERNAL_SERVER_ERROR, e);
+        }
 
-        List<Artist> filteredListStyles = listArtist.stream().filter(artist -> artist.getStyle() != null).toList();
-        List<String> distintStyles = filteredListStyles.stream().map(Artist::getStyle).flatMap(List::stream).distinct().toList();
-        advancedArtistComparison.setStyles(distintGenres);
-        advancedArtistComparison.setStyleNumbers(distintGenres.size());
-        return advancedArtistComparison;
     }
 
     private List<Artist> convertResultListToArtistList(List<Result> resultList) {
-        return resultList.stream().map(this::mapResultToArtist).collect(Collectors.toList());
+        return resultList.stream().map(this::mapResultToArtist).toList();
     }
 
     private Artist mapResultToArtist(Result result) {

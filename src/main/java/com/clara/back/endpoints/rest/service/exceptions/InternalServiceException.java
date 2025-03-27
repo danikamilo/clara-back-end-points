@@ -1,17 +1,15 @@
 package com.clara.back.endpoints.rest.service.exceptions;
 
-import java.io.Serializable;
-
 /**
  * @Autor Daniel Camilo
  */
-public class DiscogsException extends RuntimeException implements Serializable {
+public class InternalServiceException extends RuntimeException {
 
     /**
      *
      * @param message
      */
-    public DiscogsException(String message) {
+    public InternalServiceException(String message) {
         super(message);
     }
 
@@ -20,7 +18,7 @@ public class DiscogsException extends RuntimeException implements Serializable {
      * @param message
      * @param cause
      */
-    public DiscogsException(String message, Throwable cause) {
+    public InternalServiceException(String message, Throwable cause) {
         super(message, cause);
     }
 }

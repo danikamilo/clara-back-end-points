@@ -1,11 +1,7 @@
 package com.clara.back.endpoints.rest.service.model.bd;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.List;
-
 
 /**
  * @Autor Daneil Camilo
@@ -17,8 +13,9 @@ public class ArtistIndex {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    public Long id;
-    public String name;
+    private Long id;
+
+    private String name;
 
     @OneToMany(mappedBy = "artistIndex", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Artist> idIndex;

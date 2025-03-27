@@ -5,21 +5,28 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.context.request.WebRequest;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(DiscogsException.class)
     public ResponseEntity<Object> handleNotFoundDataException(DiscogsException ex){
-        ErrorDetailsDTO errorDetailsDTO = new ErrorDetailsDTO(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), ex.getLocalizedMessage());
+        ErrorDetailsDTO errorDetailsDTO = new ErrorDetailsDTO(HttpStatus.NO_CONTENT, HttpStatus.NO_CONTENT.value(), ex.getMessage());
         return ResponseEntity.status(errorDetailsDTO.getStatus()).body(errorDetailsDTO);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request) {
-        ErrorDetailsDTO errorDetailsDTO = new ErrorDetailsDTO(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request.getDescription(false));
-        return new ResponseEntity<>(errorDetailsDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+
+    @ExceptionHandler(NoArgumentsException.class)
+    public ResponseEntity<Object> handleNotFoundDataException(NoArgumentsException ex){
+        ErrorDetailsDTO errorDetailsDTO = new ErrorDetailsDTO(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return ResponseEntity.status(errorDetailsDTO.getStatus()).body(errorDetailsDTO);
     }
+
+    @ExceptionHandler(InternalServiceException.class)
+    public ResponseEntity<Object> handleNotFoundDataException(InternalServiceException e){
+        ErrorDetailsDTO errorDetailsDTO = new ErrorDetailsDTO(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), e.getCause());
+        return ResponseEntity.status(errorDetailsDTO.getStatus()).body(errorDetailsDTO);
+    }
+
 
 }
