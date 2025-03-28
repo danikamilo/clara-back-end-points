@@ -40,7 +40,7 @@ public class Result {
     private String type;
     @JsonProperty("id")
     private Long id;
-    //@JsonProperty("formats")
-    //public List<Format> formats;
+    @JsonProperty("formats")
+    public List<Format> formats;
 
 }

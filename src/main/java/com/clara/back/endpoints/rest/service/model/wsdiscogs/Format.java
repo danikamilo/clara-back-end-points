@@ -4,16 +4,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import java.util.List;
 
-
+/**
+ * @Autor Daniel Camilo
+ */
 @Data
 public class Format {
 
-    @JsonProperty("genre")
+    @JsonProperty("name")
     public String name;
-    @JsonProperty("genre")
+    @JsonProperty("qty")
     public String qty;
-    @JsonProperty("genre")
+    @JsonProperty("text")
     public String text;
-    @JsonProperty("genre")
+    @JsonProperty("descriptions")
     public List<String> descriptions;
+
+    // Constructor
+    public Format(String name, String qty, String text, List<String> descriptions) {
+        this.name = name;
+        this.qty = qty;
+        this.text = text;
+        this.descriptions = descriptions;
+    }
 }

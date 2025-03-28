@@ -1,24 +1,29 @@
 package com.clara.back.endpoints.rest.service.service;
 
 import com.clara.back.endpoints.rest.service.dto.AdvancedArtistComparisonDTO;
+import com.clara.back.endpoints.rest.service.dto.ArtistsDTO;
 import com.clara.back.endpoints.rest.service.exceptions.InternalServiceException;
 import com.clara.back.endpoints.rest.service.exceptions.NoArgumentsException;
-import com.clara.back.endpoints.rest.service.model.bd.Artist;
-
 import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
  * @Autor Daniel Camilo
  */
-public interface IArtistsService {
+public interface IDiscographyService {
+
+    /**
+     * @Autor Daniel Camilo
+     * @return DiscogsResponse
+     */
+    public List<ArtistsDTO> searchALlArtist() throws InternalServiceException;
 
     /**
      * @Autor Daniel Camilo
      * @param artistName
      * @return DiscogsResponse
      */
-    public List<Artist> searchArtist(String artistName) throws InternalServiceException;
+    public ArtistsDTO searchArtist(String artistName) throws InternalServiceException;
 
     /**
      * @Autor Daniel Camilo
@@ -26,7 +31,7 @@ public interface IArtistsService {
      * year
      * @return List<Artist>
      */
-    public List<Artist> getDiscoGraphies() throws InternalServiceException;
+    public ArtistsDTO searchAllDiscoGraphies() throws InternalServiceException;
 
     /**
      * @Autor Daniel Camilo

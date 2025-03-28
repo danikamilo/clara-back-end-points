@@ -10,7 +10,7 @@ import static org.hamcrest.Matchers.*;
  * @Autor Daniel Camilo
  */
 
-public class ArtistsControllerTest {
+class ArtistsControllerTest {
 
     @BeforeAll
     public static void setup() {
@@ -35,8 +35,7 @@ public class ArtistsControllerTest {
                 .when()
                 .get("/search-artist/{artistName}/")
                 .then()
-                .statusCode(200)
-                .body("size()", equalTo(0));
+                .statusCode(200);
     }
 
     @Test
@@ -53,7 +52,7 @@ public class ArtistsControllerTest {
     public void testGetDiscographies_Success() {
         given()
                 .when()
-                .get("/get-discographies")
+                .get("/search-discographies/")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON);
@@ -63,7 +62,7 @@ public class ArtistsControllerTest {
     public void testGetDiscographies_NotEmpty() {
         given()
                 .when()
-                .get("/get-discographies")
+                .get("/search-discographies")
                 .then()
                 .body("size()", greaterThan(0));
     }
@@ -72,7 +71,7 @@ public class ArtistsControllerTest {
     public void testGetDiscographies_InvalidEndpoint() {
         given()
                 .when()
-                .get("/get-discographies-wrong")
+                .get("/search-discographies-wrong")
                 .then()
                 .statusCode(404);
     }
@@ -109,7 +108,7 @@ public class ArtistsControllerTest {
                 .when()
                 .get("/compare-artist/first/{first}/second/{second}/")
                 .then()
-                .statusCode(500);
+                .statusCode(400);
     }
 
     @Test

@@ -3,6 +3,9 @@ package com.clara.back.endpoints.rest.service.model.wsdiscogs;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+/**
+ * @Autor Daniel Camilo
+ */
 @Data
 public class Pagination {
 
